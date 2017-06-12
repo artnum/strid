@@ -80,47 +80,62 @@ inline void strid_init(const char * any) {
     srand48(_strid_hash(any));
 }
 
-inline static void _strid_generate(Strid strid, int from) {
+inline static unsigned char _strid_generate(Strid strid, int from, unsigned char crc) {
     int i = 0;
-    unsigned char crc = 0;
     
     if(from < 0) { from = 0; }
     for(i = from; i < STRID_SIZE - 2; i++) {
         strid[i] = STRID_BASE36[lrand48() % 36];
         crc = CRC8[crc ^ strid[i]];
     }
+    
+    return crc;
+}
+
+inline static void _strid_close(Strid strid, unsigned char crc) {
     strid[STRID_SIZE - 2] = STRID_BASE36[(crc & 0x0F) % 36];
-    strid[STRID_SIZE - 1] = STRID_BASE36[((crc & 0xF0) >> 4) % 36];
+    strid[STRID_SIZE - 1] = STRID_BASE36[((crc& 0xF0) >> 4) % 36];
     strid[STRID_SIZE] = '\0';
 }
 
 inline void strid_generate_prefix(Strid strid, const char * prefix) {
     long int p = 0;
     unsigned char i = 0;
+    unsigned char crc = 0;
 
     p = _strid_hash(prefix);
-    _strid_generate(strid, 2);
-   
+    
     i = ((p & 0xFF000000) >> 24) ^ ((p & 0x00FF0000) > 18);
     strid[0] = STRID_BASE36[ i % 36 ];
     i = ((p & 0x0000FF00) >> 8) ^ ((p & 0x000000FF));
     strid[1] = STRID_BASE36[ i % 36 ];
+
+    crc = CRC8[crc ^ strid[0]];
+    crc = CRC8[crc ^ strid[1]];
+
+    crc = _strid_generate(strid, 2, crc);
+    _strid_close(strid, crc);
 }
 
 inline void strid_generate_random(Strid strid) {
-    _strid_generate(strid, 0);
+    unsigned char crc = 0;
+
+    crc = _strid_generate(strid, 0, crc);
+    _strid_close(strid, crc);
 }
 
 inline int strid_valid(Strid strid) {
     int i = 0;
-    unsigned char a = 0, b = 0;
     unsigned char crc = 0;
 
     for(i = 0; i < STRID_SIZE - 2; i++) {
         crc = CRC8[crc ^ STR_UPPER(strid[i])];
     }
-    if(crc == ((STR_UPPER(strid[STRID_SIZE - 1]) & 0x0F)<<4) | 
-            (STR_UPPER(strid[STRID_SIZE - 2]) & 0x0F)) { return 1; }
+
+    if(STRID_BASE36[(crc & 0x0F) % 36] == STR_UPPER(strid[STRID_SIZE - 2]) &&
+    STRID_BASE36[((crc& 0xF0) >> 4) % 36] == STR_UPPER(strid[STRID_SIZE - 1])) {
+        return 1;
+    }
     return 0;
 }
 
