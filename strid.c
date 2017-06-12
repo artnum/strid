@@ -70,9 +70,7 @@ static inline long int _strid_hash(const char * str) {
     int i = 0;
 
     for(i = 0; str[i] != 0; i++) {
-        prev |= str[i];
-        if((i + 1) % 4) { prev <<= 8; }
-        else { init ^= prev; prev = 0; }
+        init = (init << 5) + (init >> 2) + str[i];
     }
 
     return init;
