@@ -64,30 +64,53 @@ const unsigned char CRC8[256] = {
     0xb6, 0xe8, 0x0a, 0x54, 0xd7, 0x89, 0x6b, 0x35,
 };
 
-inline void strid_init(const char * any) {
+static inline long int _strid_hash(const char * str) {
     long int init = 0;
     long int prev = 0;
     int i = 0;
 
-    for(i = 0; any[i] != 0; i++) {
-        prev |= any[i];
+    for(i = 0; str[i] != 0; i++) {
+        prev |= str[i];
         if((i + 1) % 4) { prev <<= 8; }
-        else { init ^= prev; prev = 0;   }
-    }   
-    srand48(init);
+        else { init ^= prev; prev = 0; }
+    }
+
+    return init;
+} 
+
+inline void strid_init(const char * any) {
+    srand48(_strid_hash(any));
 }
 
-inline void strid_generate(Strid strid) {
+inline static void _strid_generate(Strid strid, int from) {
     int i = 0;
     unsigned char crc = 0;
     
-    for(i = 0; i < STRID_SIZE - 2; i++) {
+    if(from < 0) { from = 0; }
+    for(i = from; i < STRID_SIZE - 2; i++) {
         strid[i] = STRID_BASE36[lrand48() % 36];
         crc = CRC8[crc ^ strid[i]];
     }
     strid[STRID_SIZE - 2] = STRID_BASE36[(crc & 0x0F) % 36];
     strid[STRID_SIZE - 1] = STRID_BASE36[((crc & 0xF0) >> 4) % 36];
     strid[STRID_SIZE] = '\0';
+}
+
+inline void strid_generate_prefix(Strid strid, const char * prefix) {
+    long int p = 0;
+    unsigned char i = 0;
+
+    p = _strid_hash(prefix);
+    _strid_generate(strid, 2);
+   
+    i = ((p & 0xFF000000) >> 24) ^ ((p & 0x00FF0000) > 18);
+    strid[0] = STRID_BASE36[ i % 36 ];
+    i = ((p & 0x0000FF00) >> 8) ^ ((p & 0x000000FF));
+    strid[1] = STRID_BASE36[ i % 36 ];
+}
+
+inline void strid_generate_random(Strid strid) {
+    _strid_generate(strid, 0);
 }
 
 inline int strid_valid(Strid strid) {

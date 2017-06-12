@@ -36,7 +36,8 @@
 typedef unsigned char Strid[STRID_MAX_SIZE];
 
 void strid_init(const char *);
-void strid_generate(Strid);
+void strid_generate_random(Strid);
+void strid_generate_prefix(Strid, const char *);
 int strid_equal(Strid, Strid);
 #define strid_copy(dest, src)           memcpy((dest), (src), STRID_MAX_SIZE)
 int strid_valid(Strid);

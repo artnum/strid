@@ -11,13 +11,23 @@ Initialize the random number generator (use drand48()) by passing any string to 
     int main(void) {
         Strid myId;
 
-        strid_init("No Random String");
-        strid_generate(myId);
+        strid_init("Not So Random String");
+        strid_generate_random(myId);
 
         printf("%s\n", myId);
 
         return 0;
     }
+
+You can prefix your ID with strid_generate_prefix().
+
+	int main(void) {
+		/* ... */
+		
+		strid_generate_prefix(myId, "hostname.example.com");
+		
+		/* ... */
+	}
 
 If the id comes from an extern source, you might want to verify it.
 
